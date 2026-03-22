@@ -1,4 +1,7 @@
 #import "@preview/itemize:0.2.0" as _itemize
+#import "@preview/zebraw:0.6.1": zebraw
+#import "@preview/physica:0.9.8": *
+#import "@preview/gentle-clues:1.3.1": *
 
 #let report(
   name: "syqwq",
@@ -26,6 +29,8 @@
   set par(justify: true)
   show "。": "."
   show: _itemize.default-enum-list.with(indent: .5em)
+  show: zebraw.with(background-color: luma(251), hanging-indent: true, indentation: 4)
+  show raw: set text(font: "Consolas Nerd Font")
 
   align(center, text(size: 17pt, weight: 600)[华东师范大学数据科学与工程学院实验报告])
 
@@ -54,3 +59,23 @@
   */
 }
 
+
+/*
+#table(
+    columns: 2,
+    align: (horizon,) * 2,
+    rows: (auto, 2em),
+    stroke: none,
+    table.hline(y: 0, stroke: 2pt),
+    table.hline(y: 1),
+    table.hline(y: 7, stroke: 2pt),
+
+    [*符号*], [*定义*],
+    [$S_t$], [第 $t$ 回合的静态兵力评分],
+    [$X$], [玩家投降时刻的兵力差],
+    [$M_(i j)$], [兵种 $i$ 击杀兵种 $j$ 的频次],
+    [$S e q$], [开局前 $T$ 步的着法序列],
+    [$E_(1)$], [白方的 ELO 等级分],
+    [$E_(2)$], [黑方的 ELO 等级分],
+)
+*/
