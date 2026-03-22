@@ -3,6 +3,9 @@
 #import "@preview/physica:0.9.8": *
 #import "@preview/gentle-clues:1.3.1": *
 
+#let zcode = zebraw.with(background-color: luma(251), hanging-indent: true, indentation: 4)
+#let code-highlight-color = rgb("#2a61e2").transparentize(95%)
+
 #let report(
   name: "syqwq",
   course: "IAI",
@@ -29,8 +32,9 @@
   set par(justify: true)
   show "。": "."
   show: _itemize.default-enum-list.with(indent: .5em)
-  show: zebraw.with(background-color: luma(251), hanging-indent: true, indentation: 4)
-  show raw: set text(font: "Consolas Nerd Font")
+  show: zcode
+  // show raw: set text(font: "Consolas Nerd Font")
+  show raw: set text(font: "FiraCode Nerd Font")
 
   align(center, text(size: 17pt, weight: 600)[华东师范大学数据科学与工程学院实验报告])
 
