@@ -3,8 +3,8 @@
 #import "@preview/physica:0.9.8": *
 #import "@preview/gentle-clues:1.3.1": *
 
-#let zcode = zebraw.with(background-color: luma(251), hanging-indent: true, indentation: 4)
 #let code-highlight-color = rgb("#2a61e2").transparentize(95%)
+#let zcode = zebraw.with(background-color: luma(251), hanging-indent: true, indentation: 4, highlight-color: code-highlight-color)
 
 #let report(
   name: "syqwq",
@@ -31,6 +31,7 @@
   set heading(numbering: "I.1.1")
   set par(justify: true)
   show "。": "."
+  set enum(numbering: "(1)")
   show: _itemize.default-enum-list.with(indent: .5em)
   show: zcode
   // show raw: set text(font: "Consolas Nerd Font")

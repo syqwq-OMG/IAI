@@ -1,8 +1,39 @@
 #import "../../lib.typ": *
+#import "@preview/tdtr:0.5.4": *
 
 #show: report.with(name: "孙育泉", course: "AI基础", exp-name: "Project 1", tutor: "杨彬")
 
 = 实验任务
+
+== 人狼羊菜
+一个农民要带着一只狼、一只羊、一颗白菜过河。
+
++ 人不在的时候，狼会吃羊、羊会吃草
+
++ 人每次只能带一样东西过河。
+
+
+
+#let rt = sym.triangle.stroked.r.small
+#let lt = sym.triangle.stroked.l.small
+#let sep = sym.bar.v.double
+
+#[
+  #show "F": text(fill: red)[F]
+  #show "C": text(fill: green)[C]
+  #show "G": text(fill: teal)[G]
+  #show "W": text(fill: blue)[W]
+  有8种可能的动作：F#rt, F#lt, FC#rt, FC#lt, FG#rt, FG#lt, FW#rt, FW#lt，其中符号表示为： F(Farmer), C(Cabbage), G(Goat), W(Wolf)，#rt 和 #lt 分别表示向右和向左过河。
+]
+
+要求：
++ 画出状态空间图
+
++ 基于你的状态空间图，分别用BFS和DFS算法画出搜索路径
++ 挑选BFS或DFS算法，写出搜索到最终状态的流程
+  - BFS 展示每一步的队列
+
+  - DFS 展示每一步的递归栈
 
 == 图最短路问题
 
@@ -27,9 +58,242 @@
 编程语言： Python 3
 
 = 实验过程
+== 人狼羊菜
+*搜索树*如下：
+
+#figure[
+  #show "F": text(fill: red)[F]
+  #show "C": text(fill: green)[C]
+  #show "G": text(fill: teal)[G]
+  #show "W": text(fill: blue)[W]
+  #tidy-tree-graph()[
+    - FCGW#sep
+      - WC#sep\FG
+        - FWC#sep\G
+          - C#sep\FGW
+            - FCG#sep\W
+              - G#sep\FCW
+                - FG#sep\CW
+                  - #sep\FCGW
+          - W#sep\FCG
+            - FGW#sep\C
+              - G#sep\FCW
+                - FG#sep\CW
+                  - #sep\FCGW
+  ]
+]
+
+分别使用BFS和DFS算法搜索到最终状态的*路径*如下（使用编号来记录访问的状态顺序）：
+
+#let num(x) = (
+  math.space
+    + box(stroke: none, baseline: .2pt, radius: 50%, fill: black, height: .8em, width: .8em, text(
+      fill: white,
+      size: 5pt,
+      weight: "bold",
+      font: "New Computer Modern Sans",
+    )[#x])
+)
+
+#align(center, grid(
+  columns: (1fr,) * 2,
+  row-gutter: 1em,
+  [DFS 搜索顺序], [BFS 搜索顺序],
+  [
+    #show "F": text(fill: red)[F]
+    #show "C": text(fill: green)[C]
+    #show "G": text(fill: teal)[G]
+    #show "W": text(fill: blue)[W]
+    #tidy-tree-graph()[
+      - FCGW#sep#num(0)
+        - WC#sep\FG#num(1)
+          - FWC#sep\G#num(2)
+            - C#sep\FGW#num(3)
+              - FCG#sep\W#num(4)
+                - G#sep\FCW#num(5)
+                  - FG#sep\CW#num(6)
+                    - #sep\FCGW#num(7)
+            - W#sep\FCG#num(8)
+              - FGW#sep\C#num(9)
+                - G#sep\FCW#num(10)
+                  - FG#sep\CW#num(11)
+                    - #sep\FCGW#num(12)
+    ]
+  ],
+  [
+    #show "F": text(fill: red)[F]
+    #show "C": text(fill: green)[C]
+    #show "G": text(fill: teal)[G]
+    #show "W": text(fill: blue)[W]
+    #tidy-tree-graph()[
+      - FCGW#sep#num(0)
+        - WC#sep\FG#num(1)
+          - FWC#sep\G#num(2)
+            - C#sep\FGW#num(3)
+              - FCG#sep\W#num(5)
+                - G#sep\FCW#num(7)
+                  - FG#sep\CW#num(9)
+                    - #sep\FCGW#num(11)
+            - W#sep\FCG#num(4)
+              - FGW#sep\C#num(6)
+                - G#sep\FCW#num(8)
+                  - FG#sep\CW#num(10)
+                    - #sep\FCGW#num(12)
+    ]
+  ],
+))
+
+本次选择使用 BFS 算法。首先要考虑如何记录状态，由于每个角色有互斥关系，并且分为河的两侧，于是考虑使用状态压缩来表示一侧的状态，然后对于完整的两侧状态使用元组即可，也就是 `tuple[int, int]`。表示如下：
+
+```py
+FARMER, CABBAGE, GOAT, WOLF = 1, 2, 4, 8
+ROLES = "FCGW"
+
+initial_state = FARMER | CABBAGE | GOAT | WOLF, 0
+final_state = 0, FARMER | CABBAGE | GOAT | WOLF
+```
+
+接下来，我们考虑如何判断一个状态是否合法。根据题目要求，农民不在的时候，狼会吃羊、羊会吃草，所以我们需要判断在某一侧如果没有农民，那么是否存在狼和羊或者羊和草同时存在的情况，如果存在则说明这个状态不合法。
+
+```py
+def valid(state: tuple[int, int]) -> bool:
+    def check(side: int) -> bool:
+        if (side & CABBAGE) and (side & GOAT):
+            return False
+        if (side & GOAT) and (side & WOLF):
+            return False
+        return True
+
+    l, r = state
+    return check(r) if l & FARMER else check(l)
+```
+
+然后，为了方便将状态转换成可读的字符串，我们可以写一个函数来将状态转换成字符串表示：
+
+```py
+def state_to_str(state: tuple[int, int]) -> str:
+    def foo(side: int):
+        return "".join(ROLES[i] for i in range(4) if (side & (1 << i)) != 0)
+
+    l, r = state
+    return f"{foo(l):<4} | {foo(r)}"
+```
+
+对于 BFS 部分，因为要输出不同的方案，因此我们考虑对于队列的每一项都记录一个到该状态的路径，同时使用 `vis` 字典来记录到当前状态的最短路径长度，保证最优解。然后，使用 `step` 计数每次层级的扩展，用于输出每层时的队列状态。在进行状态转移的时候，只需要使用异或操作来翻转对应角色的状态，然后检测是否是合法状态即可。最后，输出所有的方案。
+
+```py
+def bfs():
+    # path of states
+    q = deque([[initial_state]])
+
+    vis = {initial_state: 0}
+
+    solutions = []
+    step = 1
+
+    while q:
+        print(f"=== step {step} queue ===")
+        for path in q:
+            print("  " + state_to_str(path[-1]))
+        print()
+
+        level_size = len(q)
+        for _ in range(level_size):
+            path = q.popleft()
+            current_state = path[-1]
+            current_depth = len(path) - 1
+
+            if current_state == final_state:
+                solutions.append(path)
+                continue
+
+            l, r = current_state
+            for i in range(4):
+                next_state = None
+                if (l & FARMER) and (l & (1 << i)):
+                    next_state = (l ^ (FARMER | (1 << i)), r ^ (FARMER | (1 << i)))
+                elif (r & FARMER) and (r & (1 << i)):
+                    next_state = (l ^ (FARMER | (1 << i)), r ^ (FARMER | (1 << i)))
+
+                if next_state is not None and valid(next_state):
+                    if next_state not in vis:
+                        vis[next_state] = current_depth + 1
+                        q.append(path + [next_state])
+                    elif vis[next_state] == current_depth + 1:
+                        q.append(path + [next_state])
+        if solutions:
+            break
+
+        step += 1
+
+    print("-" * 30)
+    print(f"find {len(solutions)} best solutions：\n")
+    for idx, sol in enumerate(solutions, 1):
+        print(f"solution {idx}")
+        for s in sol:
+            print("  " + state_to_str(s))
+        print()
+```
+
+最后，整个程序的输出如下：
+
+```txt 
+=== step 1 queue ===
+  FCGW | 
+
+=== step 2 queue ===
+  CW   | FG
+
+=== step 3 queue ===
+  FCW  | G
+
+=== step 4 queue ===
+  W    | FCG
+  C    | FGW
+
+=== step 5 queue ===
+  FGW  | C
+  FCG  | W
+
+=== step 6 queue ===
+  G    | FCW
+  G    | FCW
+
+=== step 7 queue ===
+  FG   | CW
+  FG   | CW
+
+=== step 8 queue ===
+       | FCGW
+       | FCGW
+
+------------------------------
+find 2 best solutions：
+
+solution 1
+  FCGW | 
+  CW   | FG
+  FCW  | G
+  W    | FCG
+  FGW  | C
+  G    | FCW
+  FG   | CW
+       | FCGW
+
+solution 2
+  FCGW | 
+  CW   | FG
+  FCW  | G
+  C    | FGW
+  FCG  | W
+  G    | FCW
+  FG   | CW
+       | FCGW
+```
+
 == 图最短路问题
 
-为了简化代码的复用，这里统一一些变量和记号的定义：
+为了简化代码的复用，这里统一一些变量和记号的定义:
 
 #show raw.where(block: false): set text(size: 10pt)
 
@@ -140,7 +404,6 @@ def dijkstra():
 
 #zcode(
   highlight-lines: (1, 2),
-  highlight-color: code-highlight-color,
   ```py
   import sys
   sys.setrecursionlimit(200000)
@@ -237,7 +500,6 @@ def dijkstra() -> bool:
 启发式搜索，启发函数可以使用曼哈顿距离，即每个数字与其目标位置的行距和列距之和，保证不会高估实际距离，从而保证算法的正确性。
 
 #zcode(
-  highlight-color: code-highlight-color,
   highlight-lines: (16, 20, 29, 30, 36, 51),
   ```py
   from heapq import heappush, heappop
