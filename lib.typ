@@ -1,10 +1,29 @@
 #import "@preview/itemize:0.2.0" as _itemize
 #import "@preview/zebraw:0.6.1": zebraw
 #import "@preview/physica:0.9.8": *
-#import "@preview/gentle-clues:1.3.1": *
+#import "@preview/gentle-clues:1.3.1"
+
+#let sans = ("New Computer Modern Sans", "Source Han Sans SC")
 
 #let code-highlight-color = rgb("#2a61e2").transparentize(95%)
-#let zcode = zebraw.with(background-color: luma(251), hanging-indent: true, indentation: 4, highlight-color: code-highlight-color)
+#let zcode = zebraw.with(
+  background-color: luma(251),
+  hanging-indent: true,
+  indentation: 4,
+  highlight-color: code-highlight-color,
+)
+
+#let capitialize(s) = upper(s.at(0)) + s.slice(1)
+
+#let gc-funcs = (gentle-clues.idea, gentle-clues.info, gentle-clues.example, gentle-clues.tip)
+#let (idea, info, example, tip) = gc-funcs.map(
+  f => (
+    body => f(
+      title: text(font: sans, size: 12pt, capitialize(repr(f))),
+      text(font: sans, size: 11pt, body),
+    )
+  ),
+)
 
 #let report(
   name: "syqwq",
@@ -35,7 +54,7 @@
   show: _itemize.default-enum-list.with(indent: .5em)
   show: zcode
   // show raw: set text(font: "Consolas Nerd Font")
-  show raw: set text(font: "FiraCode Nerd Font")
+  show raw: set text(font: ("FiraCode Nerd Font", "Source Han Sans SC"))
 
   align(center, text(size: 17pt, weight: 600)[华东师范大学数据科学与工程学院实验报告])
 
