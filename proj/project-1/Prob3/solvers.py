@@ -90,9 +90,7 @@ class MazeSolver:
                     heapq.heappush(pq, (f_score, (nr, nc), path + [(nr, nc)]))
     @staticmethod
     def dijkstra(maze: Maze) -> Iterator[SolverState]:
-        # 优先队列存储：(当前累计代价, 当前坐标, 到达当前坐标的路径)
         pq = [(0, maze.start, [maze.start])]
-        # 记录到达每个节点的最短已知代价
         costs = {maze.start: 0}
         
         explored_order = []
@@ -101,17 +99,14 @@ class MazeSolver:
         while pq:
             current_cost, current, path = heapq.heappop(pq)
 
-            # 如果该节点已经被完全探索过，说明队列里存放的是冗余的历史较高代价记录，直接跳过
             if current in explored_set:
                 continue
 
             explored_set.add(current)
             explored_order.append(current)
             
-            # 提取优先队列中还在等待探索的节点（过滤掉已经处理完的）
             frontier = list({node for cost, node, p in pq if node not in explored_set})
 
-            # yield 当前状态给可视化器
             yield SolverState(current, list(explored_order), frontier, path)
 
             if current == maze.goal:
@@ -119,8 +114,6 @@ class MazeSolver:
 
             for nr, nc in maze.get_neighbors(*current):
                 new_cost = current_cost + 1  # 迷宫中每走一步的代价视为 1
-                
-                # 只有找到更优路径时，才更新代价并加入队列
                 if new_cost < costs.get((nr, nc), float("inf")):
                     costs[(nr, nc)] = new_cost
                     heapq.heappush(pq, (new_cost, (nr, nc), path + [(nr, nc)]))

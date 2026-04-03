@@ -56,9 +56,7 @@ class MazeVisualizer:
 
         # 2. 绘制待探索节点 (Frontier)
         for r, c in state.frontier:
-            self.dynamic_patches["frontier"].append(
-                self._add_rect(r, c, "purple", 0.8)
-            )
+            self.dynamic_patches["frontier"].append(self._add_rect(r, c, "purple", 0.8))
 
         # 3. 绘制终点
         goal_r, goal_c = self.maze.goal
@@ -88,9 +86,17 @@ class MazeVisualizer:
 
         return [patch for group in self.dynamic_patches.values() for patch in group]
 
+
     def animate(
-        self, solver_generator: Iterator[SolverState], interval=100, save_path=None
+        self,
+        solver_generator: Iterator[SolverState],
+        interval=100,
+        save_path=None,
+        title: str = None,
     ):
+        if title:
+            self.ax.set_title(title, fontsize=14, fontweight="bold")
+
         ani = animation.FuncAnimation(
             self.fig,
             self._update_frame,
@@ -100,6 +106,7 @@ class MazeVisualizer:
             repeat=False,
         )
         if save_path:
-            ani.save(save_path, writer="pillow", fps=1000 // interval)
+            ani.save(save_path, writer="ffmpeg", fps=1000 // interval)
+            return ani
         plt.show()
         return ani
