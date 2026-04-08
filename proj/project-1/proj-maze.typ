@@ -5,7 +5,7 @@
 
 = 实验任务
 
-给定一个 $n  times m$ 的⼆维整数数组，⽤来表示⼀个迷宫，数组中只包含 $0$ 或 $1$，其中 $0$ 表示可以⾛的路，$1$ 表示不可通过的墙壁。最初，有个人位于左上角 $(1,1)$ 处，已知该⼈每次可以向上、下、左、右任意⼀个⽅向移动⼀个位置。
+给定一个 $n times m$ 的⼆维整数数组，⽤来表示⼀个迷宫，数组中只包含 $0$ 或 $1$，其中 $0$ 表示可以⾛的路，$1$ 表示不可通过的墙壁。最初，有个人位于左上角 $(1,1)$ 处，已知该⼈每次可以向上、下、左、右任意⼀个⽅向移动⼀个位置。
 
 请问，该人从左上角移动至右下角 $(n,m)$ 处最少需要移动多少次。数据保证 $(1,1)$ 与 $(n,m)$ 处的值均为 $0$，且至少存在⼀条路径可以到达。 并且需要进行可视化。
 
@@ -16,11 +16,13 @@
 
 = 实验过程
 
+== 基础封装
+
 #idea[
   为了代码的可维护性与解藕性，这里对代码进行了很大的改动，进行了模块化。
 ]
 
-首先，为了进行后续的可视化与维护每次探索的状态，我们将迷宫分装成了一个 `Maze` 类。
+首先，为了进行后续的可视化与维护每次探索的状态，我们将迷宫分装成了一个 `Maze` 类，并且定义了一个 `SolverState` 数据类来保存每一步的快照，方便后续的可视化展示。
 ```py
 # maze.py
 from dataclasses import dataclass
@@ -69,7 +71,8 @@ class Maze:
 
 ```
 
-然后，我们需要生成迷宫，用于探究算法在不同的迷宫类型下的性能表现。
+== 迷宫生成
+然后，我们需要生成迷宫，用于探究算法在不同的迷宫类型下的性能表现。为此，我们定义了一个 `MazeGenerator` 类，包含多种不同拓扑结构的迷宫生成策略。每种生成方法都保证生成的迷宫至少存在一条解，并且返回一个 `Maze` 类的实例，方便后续的寻路算法使用。
 
 ```py
 # generators.py
@@ -87,43 +90,260 @@ class MazeGenerator:
     @staticmethod
     def _is_solvable(grid: list[list[int]]) -> bool:
         """内部辅助函数：使用轻量级 BFS 快速验证网格是否至少存在一条解"""
-        ......
+        ...
 
+    ...
+```
+接下来，介绍一下这几种迷宫生成方法：
+
++ `generate_random_density`：生成*随机密度迷宫*，墙壁的分布完全随机，但保证至少存在一条解。
+  - *原理*：算法遍历网格中的每一个格子，并生成一个 0 到 1 之间的随机数。如果该数字小于设定的阈值，则将该位置设为障碍物，否则设为平地。由于纯随机可能导致起点和终点被彻底封死，每次生成后使用轻量级 BFS 快速跑一遍，如果无解就直接丢弃并重新生成，直到刷出一张有解的地图。
+  - *地图特点*：毫无章法、高度碎片化。它不存在传统意义上的“走廊”或“死胡同”，而是布满了大小不一的开阔空地和随机散落的像素块。
+  - *接口*：
+    ```py
     @staticmethod
     def generate_random_density(
         rows: int, cols: int, wall_probability: float = 0.25
     ) -> Maze:
         """生成随机密度的迷宫（保证有解）"""
-        ......
+        ...
+    ```
 
++ `generate_perfect_maze`：生成*完美迷宫*，即没有环路的迷宫，所有死胡同都只有一个出口。
+  - *原理*：算法模拟了一个“不撞南墙不回头”的矿工。从起点开始，随机选择一个相邻且未被打通的格子，挖穿中间的墙，并把新位置压入栈中。如果走到一个周围所有格子都已经被挖过的地方（死胡同），就从栈中弹出上一个位置进行“回溯”，直到找到新的未开发分支，继续往下挖。
+  - *地图特点*：高曲折度，长且深的死胡同。它拥有大量的分叉和转弯，使得路径错综复杂，但每条死胡同都只能通向一个出口。
+  - *接口*：
+    ```py
     @staticmethod
     def generate_perfect_maze(rows: int, cols: int) -> Maze:
         """使用 Randomized DFS 生成完美迷宫（高曲折度，长且深的死胡同）"""
-        ......
+        ...
+    ```
 
++ `generate_braid_maze`：生成*编织迷宫*，即多解迷宫，存在环路。
+  - *原理*：它是在完美迷宫的基础上进行二次加工的产物。算法遍历已经生成好的完美迷宫，找出所有三面环墙的“死胡同”。然后，根据设定的概率，随机打通死胡同的一堵墙，使其与相邻的另一条道路强行连通。这样就形成了环路，增加了多解的可能性。
+  - *地图特点*：迷宫中充满了“环路”，基本上消灭了死胡同。这意味着从起点到终点存在无数种不同的有效路径，长短不一。
+  - *接口*：
+    ```py
     @staticmethod
     def generate_braid_maze(
         rows: int, cols: int, braid_probability: float = 0.5
     ) -> Maze:
         """生成编织迷宫（多解迷宫，存在环路）"""
-        ......
+        ...
+    ```
 
++ `generate_cave_maze`：生成*洞穴迷宫*，即类似自然洞穴的迷宫。
+  - *原理*：算法基于细胞自动机的思想。首先随机生成一个初始状态的网格，其中每个格子以一定概率被设为墙壁。然后，算法迭代地更新网格状态：对于每个格子，统计其周围 8 个邻居中有多少是墙壁。如果邻居中墙壁数量超过某个阈值，则该格子在下一轮迭代中变成墙壁；反之则变成平地。经过多次迭代后，网格会逐渐演化成类似自然洞穴的结构。
+  - *地图特点*：拥有大量不规则的开阔空间和狭窄通道，整体感觉更像是自然形成的洞穴系统，而不是人工设计的迷宫。
+  - *接口*：
+    ```py
     @staticmethod
     def generate_cave_maze(
         rows: int, cols: int, initial_wall_prob: float = 0.45, iterations: int = 4
     ) -> Maze:
         """利用细胞自动机生成类似自然洞穴的迷宫"""
-        ......
+        ...
+    ```
 
++ `generate_recursive_division`：生成*递归分割迷宫*，即拥有长直走廊和整齐的矩形区块的迷宫。
+  - *原理*：算法采用分治的思想。首先将整个网格视为一个大矩形区域，在其中随机选择一个位置竖直或水平划分成两个子区域，并在划分线上随机打通一个洞作为通路。然后对每个子区域递归地执行同样的划分过程，直到子区域小到无法再划分为止。最终形成的迷宫由许多长直的走廊和整齐的矩形区块组成。
+  - *地图特点*：拥有大量长直走廊和规整的矩形区块。它的结构相对简单，路径较为直接，但仍然存在一些死胡同和分叉.
+  - *接口*：
+    ```py
     @staticmethod
     def generate_recursive_division(rows: int, cols: int) -> Maze:
         """使用递归分割法生成迷宫（拥有长直走廊和整齐的矩形区块）"""
-        ......
+        ...
+    ```
 
++ `generate_prim_maze`：生成*Prim 迷宫*，即极多超短死胡同，强烈的中心辐射感的迷宫。
+  - *原理*：算法从起点开始，将其加入一个“已访问”集合。然后，算法将起点的所有邻居加入一个优先队列中，优先级根据某种随机权重来确定。每次从优先队列中取出优先级最高的邻居，如果该邻居未被访问过，则将其加入“已访问”集合，并打通它与它的父节点之间的墙。然后，将该邻居的所有未访问过的邻居加入优先队列中。这个过程持续进行，直到优先队列为空为止。
+  - *地图特点*：极多超短死胡同，强烈的中心辐射感。它的路径结构非常独特，中心区域通常会有更多的分叉和死胡同，而外围则相对简单。
+  - *接口*：
+    ```py
     @staticmethod
     def generate_prim_maze(rows: int, cols: int) -> Maze:
         """使用随机 Prim 算法生成迷宫（极多超短死胡同，强烈的中心辐射感）"""
-        ......
+        ...
+    ```
+
+#idea[
+  这里放上grid的可视化图，展示一下不同生成方法生成的迷宫长什么样子。
+]
+
+== 搜索算法
+在生成了不同类型的迷宫之后，我们需要实现多种搜索算法来寻找从起点到终点的最短路径。为此，我们定义了一个 `MazeSolver` 类，包含 DFS、BFS、Dijkstra 和 A\* 四种算法的实现。每个算法都接受一个 `Maze` 实例作为输入，并返回一个 `SolverState` 的迭代器，方便后续的可视化展示。
+
+
++ DFS：深度优先搜索，维护一个栈，每次递归调用直到找到终点或无路可走时回退。
+  ```py
+  @staticmethod
+  def dfs(maze: Maze) -> Iterator[SolverState]:
+      stack = [(maze.start, [maze.start])]
+      visited = set()
+      explored_order = []
+
+      while stack:
+          current, path = stack.pop()
+          if current in visited:
+              continue
+
+          visited.add(current)
+          explored_order.append(current)
+
+          # 提取栈中等待探索的节点
+          frontier = [node for (node, p) in stack if node not in visited]
+          yield SolverState(current, list(explored_order), frontier, path)
+
+          if current == maze.goal:
+              return
+
+          for nr, nc in maze.get_neighbors(*current):
+              if (nr, nc) not in visited:
+                  stack.append(((nr, nc), path + [(nr, nc)]))
+  ```
++ BFS：广度优先搜索，维护一个队列，每次探索当前层的所有节点后再进入下一层。
+  ```py
+  @staticmethod
+  def bfs(maze: Maze) -> Iterator[SolverState]:
+      queue = deque([(maze.start, [maze.start])])
+      visited = {maze.start}
+      explored_order = []
+
+      while queue:
+          current, path = queue.popleft()
+          explored_order.append(current)
+
+          frontier = [node for (node, p) in queue]
+          yield SolverState(current, list(explored_order), frontier, path)
+
+          if current == maze.goal:
+              return
+
+          for nr, nc in maze.get_neighbors(*current):
+              if (nr, nc) not in visited:
+                  visited.add((nr, nc))
+                  queue.append(((nr, nc), path + [(nr, nc)]))
+  ```
+
++ Dijkstra：维护一个优先队列，每次选择当前路径代价最小的节点进行扩展。
+  ```py
+  @staticmethod
+  def dijkstra(maze: Maze) -> Iterator[SolverState]:
+      # 优先队列存储：(当前累计代价, 当前坐标, 到达当前坐标的路径)
+      pq = [(0, maze.start, [maze.start])]
+      # 记录到达每个节点的最短已知代价
+      costs = {maze.start: 0}
+
+      explored_order = []
+      explored_set = set()
+
+      while pq:
+          current_cost, current, path = heapq.heappop(pq)
+
+          # 如果该节点已经被完全探索过，说明队列里存放的是冗余的历史较高代价记录，直接跳过
+          if current in explored_set:
+              continue
+
+          explored_set.add(current)
+          explored_order.append(current)
+
+          # 提取优先队列中还在等待探索的节点（过滤掉已经处理完的）
+          frontier = list({node for cost, node, p in pq if node not in explored_set})
+
+          # yield 当前状态给可视化器
+          yield SolverState(current, list(explored_order), frontier, path)
+
+          if current == maze.goal:
+              return
+
+          for nr, nc in maze.get_neighbors(*current):
+              new_cost = current_cost + 1  # 迷宫中每走一步的代价视为 1
+
+              # 只有找到更优路径时，才更新代价并加入队列
+              if new_cost < costs.get((nr, nc), float("inf")):
+                  costs[(nr, nc)] = new_cost
+                  heapq.heappush(pq, (new_cost, (nr, nc), path + [(nr, nc)]))
+  ```
+
++ A\*：在 Dijkstra 的基础上加入启发式函数，优先探索估价函数值最小的节点。
+  ```py
+  @staticmethod
+  def a_star(maze: Maze) -> Iterator[SolverState]:
+      def manhattan(p1, p2):
+          return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
+
+      g_score = {maze.start: 0}
+      pq = [(manhattan(maze.start, maze.goal), maze.start, [maze.start])]
+      explored_order = []
+      explored_set = set()
+
+      while pq:
+          _, current, path = heapq.heappop(pq)
+
+          if current in explored_set:
+              continue
+
+          explored_set.add(current)
+          explored_order.append(current)
+          frontier = list({node for f, node, p in pq if node not in explored_set})
+
+          yield SolverState(current, list(explored_order), frontier, path)
+
+          if current == maze.goal:
+              return
+
+          for nr, nc in maze.get_neighbors(*current):
+              tentative_g = g_score.get(current, float("inf")) + 1
+              if tentative_g < g_score.get((nr, nc), float("inf")):
+                  g_score[(nr, nc)] = tentative_g
+                  f_score = tentative_g + manhattan((nr, nc), maze.goal)
+                  heapq.heappush(pq, (f_score, (nr, nc), path + [(nr, nc)]))
+  ```
+#idea[
+    实际上，由于在这个迷宫问题中，所有边的边权均为1，因此 Dijkstra 的优先队列本质上和 BFS 的普通队列是等价的。因此在这个特定问题中，Dijkstra 和 BFS 的唯一的区别是 Dijkstra 维护了一个额外的成本字典来记录到达每个节点的最短已知代价，而 BFS 则只需要维护一个简单的访问集合。
+]
+
+== 可视化渲染
+为了更直观地展示搜索算法的执行过程，我们实现了一个 `MazeVisualizer` 类，使用 Matplotlib 来动态渲染迷宫的状态。每当搜索算法 `yield` 一个新的 `SolverState` 时，`MazeVisualizer` 就会更新图像，显示当前节点、已探索的节点、待探索的节点以及当前路径。
+
+```py
+class MazeVisualizer:
+    def __init__(self, maze: Maze):
+        self.maze = maze
+        self.fig, self.ax = plt.subplots(figsize=(10, 8))
+        self._setup_plot()
+
+        # 保存动态绘制对象的引用以便清除
+        self.dynamic_patches = {
+            "explored": [],
+            "frontier": [],
+            "current": [],
+            "goal": [],
+            "path": [],
+        }
+
+    def _setup_plot(self):
+        ...
+
+    def _clear_patches(self, key: str):
+        while self.dynamic_patches[key]:
+            self.dynamic_patches[key].pop().remove()
+
+    def _add_rect(self, r, c, color, alpha=1.0) -> patches.Rectangle:
+        rect = patches.Rectangle(
+            (c - 0.5, r - 0.5), 1, 1, linewidth=0, facecolor=color, alpha=alpha
+        )
+        return self.ax.add_patch(rect)
+
+    def _update_frame(self, state: SolverState):
+        ...
+
+    def animate(
+        self, solver_generator: Iterator[SolverState], interval=100, save_path=None
+    ):
+        ...
 
 ```
 
@@ -133,3 +353,4 @@ class MazeGenerator:
 #info[
   完整代码见压缩包其余代码文件。
 ]
+
