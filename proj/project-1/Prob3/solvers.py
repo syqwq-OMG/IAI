@@ -119,7 +119,7 @@ class MazeSolver:
                     heapq.heappush(pq, (new_cost, (nr, nc), path + [(nr, nc)]))
                     
     @staticmethod
-    def a_star_robust(maze: Maze) -> Iterator[SolverState]:
+    def a_star_cross(maze: Maze) -> Iterator[SolverState]:
         """
         高鲁棒性的 A* 算法：使用向量叉积打破平局，完美兼顾开阔地形与复杂迷宫。
         """

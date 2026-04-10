@@ -14,7 +14,7 @@ def generate6gif(generator: MazeGenerator, seed=77, row=10, col=10):
     random.seed(seed)
     maze = generator(row, col)
 
-    solvers = [MazeSolver.a_star, MazeSolver.dfs, MazeSolver.bfs, MazeSolver.dijkstra, MazeSolver.a_star_robust, MazeSolver.jps_4way]
+    solvers = [MazeSolver.a_star, MazeSolver.dfs, MazeSolver.bfs, MazeSolver.dijkstra, MazeSolver.a_star_cross, MazeSolver.jps_4way]
     func_inst = zip(solvers, map(lambda f: f(maze), solvers))
 
     visualizer = MazeVisualizer(maze)

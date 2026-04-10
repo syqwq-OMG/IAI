@@ -1,7 +1,8 @@
 #import "../../lib.typ": *
 
 #show: report.with(name: "孙育泉", course: "AI基础", exp-name: "Maze", tutor: "杨彬")
-
+#set text(lang: "zh")
+#outline()
 
 = 实验任务
 
@@ -169,14 +170,15 @@ class MazeGenerator:
     ```
 
 #grid(
-    columns: (1fr,)*3,
-    row-gutter: 5pt,
-    [#figure(image("pic/random_density-10-10x10-a_star.gif"), caption: [Random Density])<fig:random-density>],
-    [#figure(image("pic/perfect_maze-10-10x10-a_star.gif"), caption: [Perfect Maze])<fig:perfect-maze>],
-    [#figure(image("pic/braid_maze-10-10x10-a_star.gif"), caption: [Braid Maze])<fig:braid-maze>],
-    [#figure(image("pic/cave_maze-10-10x10-a_star.gif"), caption: [Cave Maze])<fig:cave-maze>],
-    [#figure(image("pic/recursive_division-10-10x10-a_star.gif"), caption: [Recursive Division])<fig:recursive-division>],
-    [#figure(image("pic/prim_maze-10-10x10-a_star.gif"), caption: [Prim Maze])<fig:prim-maze>]
+  columns: (1fr,) * 3,
+  row-gutter: 5pt,
+  [#figure(image("pic/random_density-10-10x10-a_star.gif"), caption: [Random Density])<fig:random-density>],
+  [#figure(image("pic/perfect_maze-10-10x10-a_star.gif"), caption: [Perfect Maze])<fig:perfect-maze>],
+  [#figure(image("pic/braid_maze-10-10x10-a_star.gif"), caption: [Braid Maze])<fig:braid-maze>],
+
+  [#figure(image("pic/cave_maze-10-10x10-a_star.gif"), caption: [Cave Maze])<fig:cave-maze>],
+  [#figure(image("pic/recursive_division-10-10x10-a_star.gif"), caption: [Recursive Division])<fig:recursive-division>],
+  [#figure(image("pic/prim_maze-10-10x10-a_star.gif"), caption: [Prim Maze])<fig:prim-maze>],
 )
 
 
@@ -276,7 +278,7 @@ class MazeGenerator:
   ```
   #idea[
     实际上，由于在这个迷宫问题中，所有边的边权均为1，因此 Dijkstra 的优先队列本质上和 BFS 的普通队列是等价的。因此在这个特定问题中，Dijkstra 和 BFS 的唯一的区别是 Dijkstra 维护了一个额外的成本字典来记录到达每个节点的最短已知代价，而 BFS 则只需要维护一个简单的访问集合。
-]
+  ]
 
 + *A\**：在 Dijkstra 的基础上加入启发式函数 $f(n) = g(n) + h(n)$，优先探索估价函数值最小的节点。
   ```py
@@ -313,7 +315,165 @@ class MazeGenerator:
                   heapq.heappush(pq, (f_score, (nr, nc), path + [(nr, nc)]))
   ```
 
++ *A\* with cross product*：在 A\* 的基础上加入向量叉积打破平局，使得算法在开阔地形和复杂迷宫中都能表现出色。
+    #idea[
+        注意到，在开阔的地形，比如 cave maze 和 random density maze 中，一般的 A\* 算法由于估价函数设计为曼哈顿距离，因此会有很多“平局”的局面，即多个节点的 $f(n)$ 值完全相同，导致算法在这些节点之间无差别地进行扩展，表现得像是 BFS 一样，效率大打折扣。
 
+        此时，我们希望在这些平局的局面中，选择一个大方向更接近终点的节点，也就是与终点方向的偏差距离最小。形式化就是，假设起点为 $O$，终点为 $G$，当前位置为 $M$，则正确的方向应该是 $va(v_0) = va(O G)$，而现在的方向是 $va(v) = va(M G)$，而偏差程度就可以使用 $abs(va(v_0)  times va(v))$ 来表征。这个值越小，说明当前节点 $M$ 的方向与正确方向 $O G$ 越接近，我们就应该优先扩展它。
+
+        从而，现在的启发函数就变为
+        $
+        f(M) = g(M) + "manhattan"(M, G) + alpha dot (va(O G)  times va(M G))
+        $
+        其中， $alpha$ 是一个非常小的系数，保证它不会破坏 A\* 的最优性，但足以在平局时打破 BFS 式的无差别扩展，让算法在开阔地形中表现得更像 A\*，而在复杂迷宫中仍然保持强大的寻路能力。
+    ]
+  ```py
+  @staticmethod
+  def a_star_cross(maze: Maze) -> Iterator[SolverState]:
+      """
+      高鲁棒性的 A* 算法：使用向量叉积打破平局，完美兼顾开阔地形与复杂迷宫。
+      """
+      def manhattan(p1, p2):
+          return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
+
+      g_score = {maze.start: 0}
+
+      # 提前获取起点和终点，用于计算基础向量
+      sr, sc = maze.start
+      gr, gc = maze.goal
+
+      def heuristic(current):
+          cr, cc = current
+          h = manhattan(current, maze.goal)
+
+          # 【核心逻辑】：计算向量叉积 (Cross Product)
+          # 衡量当前点到终点的向量，偏离起点到终点“绝对直线”的程度
+          dx1 = cr - gr
+          dy1 = cc - gc
+          dx2 = sr - gr
+          dy2 = sc - gc
+          cross_product = abs(dx1 * dy2 - dx2 * dy1)
+
+          # 将叉积乘以一个极小的系数作为次要惩罚项
+          # 它小到不足以破坏寻路的最优性，但能完美打破开阔平地上的平局！
+          return h + cross_product * 0.001
+
+      pq = [(heuristic(maze.start), maze.start, [maze.start])]
+      explored_order = []
+      explored_set = set()
+
+      while pq:
+          _, current, path = heapq.heappop(pq)
+
+          if current in explored_set:
+              continue
+
+          explored_set.add(current)
+          explored_order.append(current)
+
+          frontier = list({node for f, node, p in pq if node not in explored_set})
+          yield SolverState(current, list(explored_order), frontier, path)
+
+          if current == maze.goal:
+              return
+
+          for nr, nc in maze.get_neighbors(*current):
+              tentative_g = g_score.get(current, float("inf")) + 1
+              if tentative_g < g_score.get((nr, nc), float("inf")):
+                  g_score[(nr, nc)] = tentative_g
+                  f_score = tentative_g + heuristic((nr, nc))
+                  heapq.heappush(pq, (f_score, (nr, nc), path + [(nr, nc)]))
+
+  ```
+
++ *JPS 4-way*：在 A\* 的基础上加入跳点搜索的优化策略，极大减少在开阔地形中的冗余节点扩展。
+
+    #idea[
+        JPS 是一种针对网格地图优化 A\* 搜索的算法。它的核心思想是在长直走廊中直接“跳过”中间节点，只在路口（交汇点）或死胡同停下，从而大幅减少在开阔地形中的冗余节点扩展。
+
+        在四向网格中，跳点搜索的核心是一个“跳跃函数”，它接受当前坐标和一个移动方向作为输入，然后沿着这个方向不断前进，直到遇到以下情况之一：
+
+        1. 撞墙：如果前进过程中遇到墙壁，说明这条路不通，返回 None。
+        2. 找到终点：如果前进过程中达到了终点，直接返回终点坐标。
+        3. 遇到路口：如果在前进过程中发现当前方向的正交（垂直）方向上有可行走的邻居，说明这是一个路口，需要停下来进行扩展。
+
+        通过这种方式，它直接在路口和路口之间飞跃，直接把图的规模从“几万个像素格子”压缩成了“几十个关键路口构成的拓扑图”。
+    ]
+  ```py
+  @staticmethod
+  def jps_4way(maze: Maze) -> Iterator[SolverState]:
+      """
+      四向跳跃点搜索 (Junction Point Search / 4-way JPS)
+      在长直走廊中直接“跳过”中间节点，只在路口（交汇点）或死胡同停下。
+      """
+      def manhattan(p1, p2):
+          return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
+
+      g_score = {maze.start: 0}
+      pq = [(manhattan(maze.start, maze.goal), maze.start, [maze.start])]
+      explored_order = []
+      explored_set = set()
+
+      def jump(r, c, dr, dc):
+          """核心跳跃函数：沿特定方向狂奔，直到遇到墙壁、终点或路口"""
+          path = []
+          while True:
+              nr, nc = r + dr, c + dc
+              if not maze.is_valid_move(nr, nc):
+                  return None, path # 撞墙，此路不通
+
+              path.append((nr, nc))
+              if (nr, nc) == maze.goal:
+                  return (nr, nc), path # 找到终点
+
+              # 【检测路口】：对于四向网格，如果当前移动方向是 (dr, dc)
+              # 那么它的正交（垂直）方向必定是 (dc, dr) 和 (-dc, -dr)
+              for odr, odc in [(dc, dr), (-dc, -dr)]:
+                  if maze.is_valid_move(nr + odr, nc + odc):
+                      # 侧边有路可以走！这是一个路口（Junction），停止跳跃
+                      return (nr, nc), path
+
+              # 如果没有遇到路口，继续沿着原方向迭代跳跃
+              r, c = nr, nc
+
+      while pq:
+          _, current, path = heapq.heappop(pq)
+
+          if current in explored_set:
+              continue
+
+          # 【可视化适配】：由于 JPS 跳过了中间节点
+          # 为了让动画渲染出完整的光束，我们需要把跳跃经过的节点全部染色
+          for node in path:
+              if node not in explored_set:
+                  explored_order.append(node)
+                  explored_set.add(node)
+
+          frontier = list({node for f, node, p in pq if node not in explored_set})
+          yield SolverState(current, list(explored_order), frontier, path)
+
+          if current == maze.goal:
+              return
+
+          # 不再一格一格试探，而是向四个方向发射“跳跃探测射线”
+          directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+          for dr, dc in directions:
+              if not maze.is_valid_move(current[0] + dr, current[1] + dc):
+                  continue
+
+              jump_result, jump_path = jump(current[0], current[1], dr, dc)
+
+              if jump_result is not None:
+                  # 代价不再是 +1，而是要加上这次跳跃跨越的格数
+                  tentative_g = g_score[current] + len(jump_path)
+
+                  if tentative_g < g_score.get(jump_result, float("inf")):
+                      g_score[jump_result] = tentative_g
+                      f_score = tentative_g + manhattan(jump_result, maze.goal)
+                      # 将跳跃终点压入优先队列
+                      heapq.heappush(pq, (f_score, jump_result, path + jump_path))
+
+  ```
 == 可视化渲染
 为了更直观地展示搜索算法的执行过程，我们实现了一个 `MazeVisualizer` 类，使用 Matplotlib 来动态渲染迷宫的状态。每当搜索算法 `yield` 一个新的 `SolverState` 时，`MazeVisualizer` 就会更新图像，显示当前节点、已探索的节点、待探索的节点以及当前路径。
 
@@ -355,6 +515,12 @@ class MazeVisualizer:
         ...
 
 ```
+
+== Benchmark
+
+
+
+
 
 = 总结
 
