@@ -96,7 +96,7 @@ class MazeGenerator:
 ```
 接下来，介绍一下这几种迷宫生成方法：
 
-+ `generate_random_density`：生成*随机密度迷宫*，墙壁的分布完全随机，但保证至少存在一条解。
++ `generate_random_density`：生成*随机密度迷宫*（如 @fig:random-density 所示），墙壁的分布完全随机，但保证至少存在一条解。
   - *原理*：算法遍历网格中的每一个格子，并生成一个 0 到 1 之间的随机数。如果该数字小于设定的阈值，则将该位置设为障碍物，否则设为平地。由于纯随机可能导致起点和终点被彻底封死，每次生成后使用轻量级 BFS 快速跑一遍，如果无解就直接丢弃并重新生成，直到刷出一张有解的地图。
   - *地图特点*：毫无章法、高度碎片化。它不存在传统意义上的“走廊”或“死胡同”，而是布满了大小不一的开阔空地和随机散落的像素块。
   - *接口*：
@@ -109,7 +109,7 @@ class MazeGenerator:
         ...
     ```
 
-+ `generate_perfect_maze`：生成*完美迷宫*，即没有环路的迷宫，所有死胡同都只有一个出口。
++ `generate_perfect_maze`：生成*完美迷宫*（如 @fig:perfect-maze 所示），即没有环路的迷宫，所有死胡同都只有一个出口。
   - *原理*：算法模拟了一个“不撞南墙不回头”的矿工。从起点开始，随机选择一个相邻且未被打通的格子，挖穿中间的墙，并把新位置压入栈中。如果走到一个周围所有格子都已经被挖过的地方（死胡同），就从栈中弹出上一个位置进行“回溯”，直到找到新的未开发分支，继续往下挖。
   - *地图特点*：高曲折度，长且深的死胡同。它拥有大量的分叉和转弯，使得路径错综复杂，但每条死胡同都只能通向一个出口。
   - *接口*：
@@ -120,7 +120,7 @@ class MazeGenerator:
         ...
     ```
 
-+ `generate_braid_maze`：生成*编织迷宫*，即多解迷宫，存在环路。
++ `generate_braid_maze`：生成*编织迷宫*（如 @fig:braid-maze 所示），即多解迷宫，存在环路。
   - *原理*：它是在完美迷宫的基础上进行二次加工的产物。算法遍历已经生成好的完美迷宫，找出所有三面环墙的“死胡同”。然后，根据设定的概率，随机打通死胡同的一堵墙，使其与相邻的另一条道路强行连通。这样就形成了环路，增加了多解的可能性。
   - *地图特点*：迷宫中充满了“环路”，基本上消灭了死胡同。这意味着从起点到终点存在无数种不同的有效路径，长短不一。
   - *接口*：
@@ -133,7 +133,7 @@ class MazeGenerator:
         ...
     ```
 
-+ `generate_cave_maze`：生成*洞穴迷宫*，即类似自然洞穴的迷宫。
++ `generate_cave_maze`：生成*洞穴迷宫*（如 @fig:cave-maze 所示），即类似自然洞穴的迷宫。
   - *原理*：算法基于细胞自动机的思想。首先随机生成一个初始状态的网格，其中每个格子以一定概率被设为墙壁。然后，算法迭代地更新网格状态：对于每个格子，统计其周围 8 个邻居中有多少是墙壁。如果邻居中墙壁数量超过某个阈值，则该格子在下一轮迭代中变成墙壁；反之则变成平地。经过多次迭代后，网格会逐渐演化成类似自然洞穴的结构。
   - *地图特点*：拥有大量不规则的开阔空间和狭窄通道，整体感觉更像是自然形成的洞穴系统，而不是人工设计的迷宫。
   - *接口*：
@@ -146,7 +146,7 @@ class MazeGenerator:
         ...
     ```
 
-+ `generate_recursive_division`：生成*递归分割迷宫*，即拥有长直走廊和整齐的矩形区块的迷宫。
++ `generate_recursive_division`：生成*递归分割迷宫*（如 @fig:recursive-division 所示），即拥有长直走廊和整齐的矩形区块的迷宫。
   - *原理*：算法采用分治的思想。首先将整个网格视为一个大矩形区域，在其中随机选择一个位置竖直或水平划分成两个子区域，并在划分线上随机打通一个洞作为通路。然后对每个子区域递归地执行同样的划分过程，直到子区域小到无法再划分为止。最终形成的迷宫由许多长直的走廊和整齐的矩形区块组成。
   - *地图特点*：拥有大量长直走廊和规整的矩形区块。它的结构相对简单，路径较为直接，但仍然存在一些死胡同和分叉.
   - *接口*：
@@ -157,7 +157,7 @@ class MazeGenerator:
         ...
     ```
 
-+ `generate_prim_maze`：生成*Prim 迷宫*，即极多超短死胡同，强烈的中心辐射感的迷宫。
++ `generate_prim_maze`：生成*Prim 迷宫*（如 @fig:prim-maze 所示），即极多超短死胡同，强烈的中心辐射感的迷宫。
   - *原理*：算法从起点开始，将其加入一个“已访问”集合。然后，算法将起点的所有邻居加入一个优先队列中，优先级根据某种随机权重来确定。每次从优先队列中取出优先级最高的邻居，如果该邻居未被访问过，则将其加入“已访问”集合，并打通它与它的父节点之间的墙。然后，将该邻居的所有未访问过的邻居加入优先队列中。这个过程持续进行，直到优先队列为空为止。
   - *地图特点*：极多超短死胡同，强烈的中心辐射感。它的路径结构非常独特，中心区域通常会有更多的分叉和死胡同，而外围则相对简单。
   - *接口*：
@@ -168,15 +168,23 @@ class MazeGenerator:
         ...
     ```
 
-#idea[
-  这里放上grid的可视化图，展示一下不同生成方法生成的迷宫长什么样子。
-]
+#grid(
+    columns: (1fr,)*3,
+    row-gutter: 5pt,
+    [#figure(image("pic/random_density-10-10x10-a_star.gif"), caption: [Random Density])<fig:random-density>],
+    [#figure(image("pic/perfect_maze-10-10x10-a_star.gif"), caption: [Perfect Maze])<fig:perfect-maze>],
+    [#figure(image("pic/braid_maze-10-10x10-a_star.gif"), caption: [Braid Maze])<fig:braid-maze>],
+    [#figure(image("pic/cave_maze-10-10x10-a_star.gif"), caption: [Cave Maze])<fig:cave-maze>],
+    [#figure(image("pic/recursive_division-10-10x10-a_star.gif"), caption: [Recursive Division])<fig:recursive-division>],
+    [#figure(image("pic/prim_maze-10-10x10-a_star.gif"), caption: [Prim Maze])<fig:prim-maze>]
+)
+
 
 == 搜索算法
 在生成了不同类型的迷宫之后，我们需要实现多种搜索算法来寻找从起点到终点的最短路径。为此，我们定义了一个 `MazeSolver` 类，包含 DFS、BFS、Dijkstra 和 A\* 四种算法的实现。每个算法都接受一个 `Maze` 实例作为输入，并返回一个 `SolverState` 的迭代器，方便后续的可视化展示。
 
 
-+ DFS：深度优先搜索，维护一个栈，每次递归调用直到找到终点或无路可走时回退。
++ *DFS*：深度优先搜索，维护一个栈，每次递归调用直到找到终点或无路可走时回退。
   ```py
   @staticmethod
   def dfs(maze: Maze) -> Iterator[SolverState]:
@@ -203,7 +211,7 @@ class MazeGenerator:
               if (nr, nc) not in visited:
                   stack.append(((nr, nc), path + [(nr, nc)]))
   ```
-+ BFS：广度优先搜索，维护一个队列，每次探索当前层的所有节点后再进入下一层。
++ *BFS*：广度优先搜索，维护一个队列，每次探索当前层的所有节点后再进入下一层。
   ```py
   @staticmethod
   def bfs(maze: Maze) -> Iterator[SolverState]:
@@ -227,7 +235,7 @@ class MazeGenerator:
                   queue.append(((nr, nc), path + [(nr, nc)]))
   ```
 
-+ Dijkstra：维护一个优先队列，每次选择当前路径代价最小的节点进行扩展。
++ *Dijkstra*：维护一个优先队列，每次选择当前路径代价最小的节点进行扩展。
   ```py
   @staticmethod
   def dijkstra(maze: Maze) -> Iterator[SolverState]:
@@ -266,8 +274,11 @@ class MazeGenerator:
                   costs[(nr, nc)] = new_cost
                   heapq.heappush(pq, (new_cost, (nr, nc), path + [(nr, nc)]))
   ```
+  #idea[
+    实际上，由于在这个迷宫问题中，所有边的边权均为1，因此 Dijkstra 的优先队列本质上和 BFS 的普通队列是等价的。因此在这个特定问题中，Dijkstra 和 BFS 的唯一的区别是 Dijkstra 维护了一个额外的成本字典来记录到达每个节点的最短已知代价，而 BFS 则只需要维护一个简单的访问集合。
+]
 
-+ A\*：在 Dijkstra 的基础上加入启发式函数，优先探索估价函数值最小的节点。
++ *A\**：在 Dijkstra 的基础上加入启发式函数 $f(n) = g(n) + h(n)$，优先探索估价函数值最小的节点。
   ```py
   @staticmethod
   def a_star(maze: Maze) -> Iterator[SolverState]:
@@ -301,9 +312,7 @@ class MazeGenerator:
                   f_score = tentative_g + manhattan((nr, nc), maze.goal)
                   heapq.heappush(pq, (f_score, (nr, nc), path + [(nr, nc)]))
   ```
-#idea[
-    实际上，由于在这个迷宫问题中，所有边的边权均为1，因此 Dijkstra 的优先队列本质上和 BFS 的普通队列是等价的。因此在这个特定问题中，Dijkstra 和 BFS 的唯一的区别是 Dijkstra 维护了一个额外的成本字典来记录到达每个节点的最短已知代价，而 BFS 则只需要维护一个简单的访问集合。
-]
+
 
 == 可视化渲染
 为了更直观地展示搜索算法的执行过程，我们实现了一个 `MazeVisualizer` 类，使用 Matplotlib 来动态渲染迷宫的状态。每当搜索算法 `yield` 一个新的 `SolverState` 时，`MazeVisualizer` 就会更新图像，显示当前节点、已探索的节点、待探索的节点以及当前路径。

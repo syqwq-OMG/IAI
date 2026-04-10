@@ -92,7 +92,7 @@ def evaluate(board: Board) -> int:
     return 1
 
 
-def get_moves(board: Board):
+def get_moves(board: Board) -> list[tuple[int, int]]:
     """
     get potential moves from the current board state. For simplicity, we can return all empty cells, but in a more optimized version, we might want to return only those that are adjacent to existing pieces.
     """
@@ -131,7 +131,7 @@ def minmax(board: Board, depth: int, alpha: int, beta: int, is_maximizing: bool)
         return mnval
 
 
-def find_best_move(board: Board, depth: int):
+def find_best_move(board: Board, depth: int) -> tuple[int, int] | None:
     bval = float("-inf")
     bmove = None
     alpha, beta = float("-inf"), float("inf")

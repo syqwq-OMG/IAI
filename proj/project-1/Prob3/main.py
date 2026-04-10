@@ -6,15 +6,15 @@ from solvers import MazeSolver
 from visualizer import MazeVisualizer
 
 
-def generate4gif(generator: MazeGenerator, seed=77, row=10, col=10):
-    """生成四个算法的动画并保存为 GIF 文件"""
+def generate6gif(generator: MazeGenerator, seed=77, row=10, col=10):
+    """生成六个算法的动画并保存为 GIF 文件"""
 
     gen_name = generator.__name__.replace("generate_", "")
 
     random.seed(seed)
     maze = generator(row, col)
 
-    solvers = [MazeSolver.a_star, MazeSolver.dfs, MazeSolver.bfs, MazeSolver.dijkstra]
+    solvers = [MazeSolver.a_star, MazeSolver.dfs, MazeSolver.bfs, MazeSolver.dijkstra, MazeSolver.a_star_robust, MazeSolver.jps_4way]
     func_inst = zip(solvers, map(lambda f: f(maze), solvers))
 
     visualizer = MazeVisualizer(maze)
@@ -38,12 +38,12 @@ def generate4gif(generator: MazeGenerator, seed=77, row=10, col=10):
 
 
 def main():
-    generate4gif(MazeGenerator.generate_random_density, seed=10, row=10, col=10)
-    generate4gif(MazeGenerator.generate_prim_maze, seed=10, row=10, col=10)
-    generate4gif(MazeGenerator.generate_cave_maze, seed=10, row=10, col=10)
-    generate4gif(MazeGenerator.generate_braid_maze, seed=10, row=10, col=10)
-    generate4gif(MazeGenerator.generate_recursive_division, seed=10, row=10, col=10)
-    generate4gif(MazeGenerator.generate_perfect_maze, seed=10, row=10, col=10)
+    generate6gif(MazeGenerator.generate_random_density, seed=10, row=10, col=10)
+    generate6gif(MazeGenerator.generate_prim_maze, seed=10, row=10, col=10)
+    generate6gif(MazeGenerator.generate_cave_maze, seed=10, row=10, col=10)
+    generate6gif(MazeGenerator.generate_braid_maze, seed=10, row=10, col=10)
+    generate6gif(MazeGenerator.generate_recursive_division, seed=10, row=10, col=10)
+    generate6gif(MazeGenerator.generate_perfect_maze, seed=10, row=10, col=10)
 
 
 if __name__ == "__main__":

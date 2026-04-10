@@ -55,6 +55,9 @@
   show: zcode
   // show raw: set text(font: "Consolas Nerd Font")
   show raw: set text(font: ("FiraCode Nerd Font", "Source Han Sans SC"))
+  show outline.entry: set text(fill: rgb("#21609a"))
+  show link: set text(fill: rgb("#21609a"))
+  show ref: set text(fill: rgb("#21609a"))
 
   align(center, text(size: 17pt, weight: 600)[华东师范大学数据科学与工程学院实验报告])
 

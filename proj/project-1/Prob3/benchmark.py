@@ -25,7 +25,9 @@ def benchmark_algorithm(generator_func, rows: int, cols: int, seed: int = None, 
         "DFS": MazeSolver.dfs,
         "BFS": MazeSolver.bfs,
         "Dijkstra": MazeSolver.dijkstra,
-        "A* (A-Star)": MazeSolver.a_star
+        "A*": MazeSolver.a_star,
+        "A*_cross": MazeSolver.a_star_robust,
+        "JPS_4way": MazeSolver.jps_4way
     }
 
     # 表头格式化
