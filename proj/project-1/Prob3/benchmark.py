@@ -36,7 +36,7 @@ def _run_solver(solver_func, maze):
 # =====================================================================
 def dif_algo_same_seed_maze(generator_func, rows: int, cols: int, seed: int = 42, **kwargs):
     gen_name = generator_func.__name__.replace("generate_", "")
-    print(f"\n=== [维度 1] 同地图多算法横向对比 ===")
+    print(f"\n=== 同地图多算法横向对比 ===")
     print(f"地图: {gen_name} | 尺寸: {rows}x{cols} | 种子: {seed}")
     
     if seed is not None:
@@ -62,7 +62,7 @@ def same_algo_dif_seed_mazesize(solver_name: str, generator_func, configs: list,
     """
     solver_func = ALGORITHMS[solver_name]
     gen_name = generator_func.__name__.replace("generate_", "")
-    print(f"\n=== [维度 2] 单一算法跨尺度/跨种子测试 ===")
+    print(f"\n=== 单一算法跨尺度/跨种子测试 ===")
     print(f"算法: {solver_name} | 地图类型: {gen_name}")
     
     header = f"{'Size (RxC)':<12} | {'Seed':<6} | {'Path Length':<12} | {'Explored Nodes':<15} | {'Time (ms)':<10}"
@@ -83,7 +83,7 @@ def same_algo_dif_seed_mazesize(solver_name: str, generator_func, configs: list,
 # =====================================================================
 def dif_algo_same_mazetype(generator_func, rows: int, cols: int, trials: int = 10, **kwargs):
     gen_name = generator_func.__name__.replace("generate_", "")
-    print(f"\n=== [维度 3] 同类型地图多次随机采样平均表现 ===")
+    print(f"\n=== 同类型地图多次随机采样平均表现 ===")
     print(f"地图: {gen_name} | 尺寸: {rows}x{cols} | 采样次数: {trials}")
 
     # 初始化统计字典
@@ -91,7 +91,7 @@ def dif_algo_same_mazetype(generator_func, rows: int, cols: int, trials: int = 1
 
     for i in range(trials):
         # 每次使用不同的随机种子
-        seed = random.randint(1, 99999)
+        seed = random.randint(1, 99999999)
         random.seed(seed)
         maze = generator_func(rows, cols, **kwargs)
 
@@ -117,7 +117,7 @@ def dif_algo_same_mazetype(generator_func, rows: int, cols: int, trials: int = 1
 # 维度 4：不同地图在平均下的最优算法 (综合评估)
 # =====================================================================
 def opt_algo_under_dif_maze(generators_dict: dict, rows: int, cols: int, trials: int = 5):
-    print(f"\n=== [维度 4] 各类型地图的平均最优算法盘点 ===")
+    print(f"\n=== 各类型地图的平均最优算法盘点 ===")
     print(f"统一尺寸: {rows}x{cols} | 单图采样次数: {trials}")
     print("评判标准：平均探索节点数最少 (效率最高)\n")
 
@@ -151,7 +151,7 @@ def opt_algo_under_dif_maze(generators_dict: dict, rows: int, cols: int, trials:
 # =====================================================================
 # 主函数：运行所有维度的测试案例
 # =====================================================================
-def main():
+def test():
     # 1. 运行维度 1：稀疏迷宫中的一次具体较量
     dif_algo_same_seed_maze(MazeGenerator.generate_random_density, rows=51, cols=51, seed=2026, wall_probability=0.2)
 
@@ -179,4 +179,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # dif_algo_same_seed_maze(MazeGenerator.generate_random_density, rows=51, cols=51, seed=2026, wall_probability=0.2)
+    
+    # dif_algo_same_mazetype(MazeGenerator.generate_perfect_maze, rows=31, cols=31, trials=10)
+    dif_algo_same_mazetype(MazeGenerator.generate_cave_maze, rows=81, cols=81, trials=10)
