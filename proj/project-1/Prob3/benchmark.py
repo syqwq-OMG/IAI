@@ -182,4 +182,16 @@ if __name__ == "__main__":
     # dif_algo_same_seed_maze(MazeGenerator.generate_random_density, rows=51, cols=51, seed=2026, wall_probability=0.2)
     
     # dif_algo_same_mazetype(MazeGenerator.generate_perfect_maze, rows=31, cols=31, trials=10)
-    dif_algo_same_mazetype(MazeGenerator.generate_cave_maze, rows=81, cols=81, trials=10)
+    
+    generators_to_test = {
+        "Random Density (20%)": lambda r, c: MazeGenerator.generate_random_density(r, c, 0.2),
+        "Braid Maze": MazeGenerator.generate_braid_maze,
+        "Perfect/DFS Maze": MazeGenerator.generate_perfect_maze,
+        "Cave/Cellular": MazeGenerator.generate_cave_maze,
+        "Prim's Maze": MazeGenerator.generate_prim_maze,
+        "Recursive Division": MazeGenerator.generate_recursive_division,
+    }
+    for sz in [8,16,32,64,128]:
+        for g in generators_to_test.values():
+            dif_algo_same_mazetype(g, rows=sz, cols=sz, trials=1000)
+            

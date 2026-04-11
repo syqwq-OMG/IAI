@@ -52,6 +52,7 @@
   show "。": "."
   set enum(numbering: "(1)")
   show: _itemize.default-enum-list.with(indent: .5em)
+  show figure: set block(breakable: true)
   show: zcode
   // show raw: set text(font: "Consolas Nerd Font")
   show raw: set text(font: ("FiraCode Nerd Font", "Source Han Sans SC"))
