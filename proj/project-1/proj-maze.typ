@@ -323,7 +323,7 @@ class MazeGenerator:
 
     从而，现在的启发函数就变为
     $
-      f(M) = g(M) + "manhattan"(M, G) + alpha dot (va(O G) times va(M G))
+      f(M) = g(M) + "manhattan"(M, G) + alpha dot abs(va(O G) times va(M G))
     $
     其中， $alpha$ 是一个非常小的系数，保证它不会破坏 A\* 的最优性，但足以在平局时打破 BFS 式的无差别扩展，让算法在开阔地形中表现得更像 A\*，而在复杂迷宫中仍然保持强大的寻路能力。
   ]

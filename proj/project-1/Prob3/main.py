@@ -38,12 +38,12 @@ def generate6gif(generator: MazeGenerator, seed=77, row=10, col=10):
 
 
 def main():
-    generate6gif(MazeGenerator.generate_random_density, seed=10, row=10, col=10)
-    generate6gif(MazeGenerator.generate_prim_maze, seed=10, row=10, col=10)
-    generate6gif(MazeGenerator.generate_cave_maze, seed=10, row=10, col=10)
-    generate6gif(MazeGenerator.generate_braid_maze, seed=10, row=10, col=10)
-    generate6gif(MazeGenerator.generate_recursive_division, seed=10, row=10, col=10)
-    generate6gif(MazeGenerator.generate_perfect_maze, seed=10, row=10, col=10)
+    generate6gif(MazeGenerator.generate_random_density, seed=10, row=20, col=20)
+    generate6gif(MazeGenerator.generate_prim_maze, seed=10, row=20, col=20)
+    generate6gif(MazeGenerator.generate_cave_maze, seed=10, row=20, col=20)
+    generate6gif(MazeGenerator.generate_braid_maze, seed=10, row=20, col=20)
+    generate6gif(MazeGenerator.generate_recursive_division, seed=10, row=20, col=20)
+    generate6gif(MazeGenerator.generate_perfect_maze, seed=10, row=20, col=20)
 
 
 if __name__ == "__main__":
