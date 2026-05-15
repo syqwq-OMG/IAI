@@ -1,7 +1,12 @@
 #import "@preview/itemize:0.2.0" as _itemize
 #import "@preview/zebraw:0.6.1": zebraw
-#import "@preview/physica:0.9.8": *
 #import "@preview/gentle-clues:1.3.1"
+#import "@preview/theorion:0.6.0": *
+// #import cosmos.simple: *
+#import cosmos.fancy: *
+// #import cosmos.rainbow: *
+// #import cosmos.clouds: *
+#import "utils.typ": *
 
 #let sans = ("New Computer Modern Sans", "Source Han Sans SC")
 
@@ -25,6 +30,18 @@
   ),
 )
 
+#let (problem-counter, problem-box, problem, show-problem) = make-frame(
+  "problem",
+  theorion-i18n-map.at("problem"),
+  counter: theorem-counter,
+  render: fancy-box.with(
+    get-border-color: get-quaternary-border-color,
+    get-body-color: get-quaternary-body-color,
+    get-symbol: get-quaternary-symbol,
+    breakable: true
+  ),
+)
+
 #let report(
   name: "syqwq",
   course: "IAI",
@@ -35,7 +52,7 @@
   grade: 2024,
   body,
 ) = {
-  set text(font: ("New Computer Modern", "Source Han Serif SC"))
+  set text(font: ("Libertinus Serif", "Source Han Serif SC"))
 
   set page(
     header: box(
@@ -59,6 +76,7 @@
   show outline.entry: set text(fill: rgb("#21609a"))
   show link: set text(fill: rgb("#21609a"))
   show ref: set text(fill: rgb("#21609a"))
+  show: show-theorion
 
   align(center, text(size: 17pt, weight: 600)[华东师范大学数据科学与工程学院实验报告])
 
