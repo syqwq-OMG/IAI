@@ -1,0 +1,13 @@
+# Kaggle Datasets and Data Files
+child-mind-institute-detect-sleep-states/
+*.parquet
+*.csv
+
+# PyTorch Model Weights
+*.pth
+*.pt
+
+# Python Caches
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
